@@ -3,8 +3,8 @@ Check the user model using a temporary, in-memory SQLite database.
 """
 
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.models import Base, User
 

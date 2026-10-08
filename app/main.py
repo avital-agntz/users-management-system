@@ -1,17 +1,12 @@
 from database import SessionLocal
 from fastapi import FastAPI, HTTPException
 from models import User
-from schemas import RegisterRequest
-from security import hash_password
+from schemas import LoginRequest, RegisterRequest
+from security import create_access_token, hash_password, verify_password
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 app = FastAPI()
-
-
-@app.get("/profile")
-def profile():
-    return {"status": "ok"}
 
 
 @app.post("/register", status_code=201)
@@ -50,8 +45,30 @@ def register(user: RegisterRequest):
     }
 
 
-@app.post("/login")
-def login():
+@app.post("/login", status_code=200)
+def login(user: LoginRequest):
+
+    # Finding user and verify password
+    with SessionLocal() as session:
+        existing_user = session.scalar(select(User).where(User.email == user.email))
+        # If the user does not exists
+        if existing_user is None:
+            raise HTTPException(status_code=401, detail="Email is not registered.")
+        # If the submitted password does not match the stored hash
+        elif not verify_password(
+            password=user.password, password_hash=existing_user.password_hash
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail="password is inccorrect for the registered user.",
+            )
+        # else, we issue token for successful log-in
+        token = create_access_token(existing_user.id)
+        return {"access_token": token, "token_type": "bearer"}
+
+
+@app.get("/profile")
+def profile():
     return {"status": "ok"}
 
 

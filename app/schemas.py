@@ -17,3 +17,8 @@ class RegisterRequest(BaseModel):
         if isinstance(value, str):
             return value.strip()
         return value
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)

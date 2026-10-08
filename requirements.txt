@@ -4,3 +4,5 @@ pydantic
 email-validator
 sqlalchemy
 bcrypt
+PyJWT
+python-dotenv
