@@ -58,3 +58,31 @@ def create_access_token(user_id: int) -> str:
         JWT_SECRET_KEY,
         algorithm=JWT_ALGORITHM,
     )
+
+
+def verify_access_token(token: str) -> int:
+    """
+    Verifies the access token and returns the user ID if valid.
+    """
+    # Decode the token and validate its structure
+    payload = jwt.decode(
+        token,
+        JWT_SECRET_KEY,
+        algorithms=[JWT_ALGORITHM],
+        options={"require": ["sub"]},
+    )
+
+    # Extract the subject (user ID) from the payload
+    subject = payload["sub"]
+
+    # Validate that the subject is a valid user ID (positive integer)
+    if not isinstance(subject, str) or not subject.isdecimal():
+        raise jwt.InvalidTokenError("Invalid user ID in token.")
+
+    user_id = int(subject)
+
+    # Else = invalid
+    if user_id <= 0:
+        raise jwt.InvalidTokenError("Invalid user ID in token.")
+
+    return user_id

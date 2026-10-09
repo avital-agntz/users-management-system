@@ -1,12 +1,57 @@
 from database import SessionLocal
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Security
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import InvalidTokenError
 from models import User
-from schemas import LoginRequest, RegisterRequest
-from security import create_access_token, hash_password, verify_password
+from schemas import LoginRequest, RegisterRequest, UpdateRequest
+from security import (
+    create_access_token,
+    hash_password,
+    verify_access_token,
+    verify_password,
+)
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 app = FastAPI()
+bearer_scheme = HTTPBearer(auto_error=False)
+
+
+@app.middleware("http")
+async def authenticate_update(request: Request, call_next):
+    """
+    Middleware to authenticate requests to the /update endpoint.
+    """
+    # cheking if the request is a PUT/update endpoint
+    if request.method == "PUT" and request.url.path == "/update":
+        # extract Authorization
+        authorization = request.headers.get("Authorization", "")
+        parts = authorization.split()
+
+        # check if the Authorization header is valid
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Missing or invalid authentication credentials."},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # extract the token and verify it
+        token = parts[1]
+        try:
+            user_id = verify_access_token(token)
+        except InvalidTokenError:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Missing or invalid authentication credentials."},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        request.state.user_id = user_id
+
+    # pass the request to the next middleware or endpoint
+    return await call_next(request)
 
 
 @app.post("/register", status_code=201)
@@ -67,14 +112,58 @@ def login(user: LoginRequest):
         return {"access_token": token, "token_type": "bearer"}
 
 
-@app.get("/profile")
-def profile():
-    return {"status": "ok"}
-
-
 @app.put("/update")
-def update():
-    return {"status": "ok"}
+def update(
+    changes: UpdateRequest,
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+):
+    user_id = request.state.user_id
+
+    with SessionLocal() as session:
+        db_user = session.get(User, user_id)
+
+        # If the user does not exist in the database
+        if db_user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="User no longer exists.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # converts a Pydantic model to a dictionary
+        supplied_changes = changes.model_dump(exclude_unset=True)
+
+        # apply the changes to the user object in the database
+        for field, value in supplied_changes.items():
+            setattr(db_user, field, value)
+
+        # try commit the changes to the database
+        try:
+            session.commit()
+        except IntegrityError:
+            # examine wether the database rejected a duplicate email
+            session.rollback()
+            if "email" in supplied_changes:
+                existing_user = session.scalar(
+                    select(User).where(
+                        User.email == supplied_changes["email"],
+                        User.id != user_id,
+                    )
+                )
+                if existing_user is not None:
+                    raise HTTPException(
+                        status_code=409, detail="Email is already registered."
+                    ) from None
+            raise
+        session.refresh(db_user)
+
+        return {
+            "id": db_user.id,
+            "first_name": db_user.first_name,
+            "last_name": db_user.last_name,
+            "email": db_user.email,
+        }
 
 
 if __name__ == "__main__":

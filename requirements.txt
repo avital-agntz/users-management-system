@@ -6,3 +6,5 @@ sqlalchemy
 bcrypt
 PyJWT
 python-dotenv
+isort
+httpx
