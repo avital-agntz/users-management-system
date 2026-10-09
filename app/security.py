@@ -3,6 +3,7 @@ Hash passwords for storage and verify them during login.
 """
 
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import bcrypt
@@ -15,6 +16,7 @@ load_dotenv(env_path)
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "15"))
 
 if not JWT_SECRET_KEY:
     raise RuntimeError("JWT_SECRET_KEY is missing from configuration.")
@@ -50,8 +52,12 @@ def create_access_token(user_id: int) -> str:
     """
     Creates access tocken for user uppon login
     """
-    # subject is the user id
-    payload = {"sub": str(user_id)}
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
+    # subject is the user id and token expiration time
+    payload = {
+        "sub": str(user_id),
+        "exp": expires_at,
+    }
 
     return jwt.encode(
         payload,
@@ -69,7 +75,7 @@ def verify_access_token(token: str) -> int:
         token,
         JWT_SECRET_KEY,
         algorithms=[JWT_ALGORITHM],
-        options={"require": ["sub"]},
+        options={"require": ["sub", "exp"]},
     )
 
     # Extract the subject (user ID) from the payload

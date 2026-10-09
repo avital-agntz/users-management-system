@@ -1,6 +1,6 @@
 # User Management System
 
-An educational FastAPI project implementing registration, JWT login, and authenticated profile updates. Users are stored in SQLite, passwords are hashed with bcrypt, and requests are validated with Pydantic.
+`FastAPI` project implementing registration, `JWT` login, and authenticated profile updates. Users are stored in `SQLite`, passwords are hashed with `bcrypt`, and requests are validated with `Pydantic`.
 
 ## Setup
 
@@ -31,6 +31,7 @@ Replace the placeholder in `app/.env` with the generated key:
 ```dotenv
 JWT_SECRET_KEY=your-generated-key
 JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=15
 ```
 
 Keep the real signing key private. `.env` and the local database are ignored by Git. The application loads `app/.env` explicitly; existing environment variables take precedence. Changing the signing key invalidates existing tokens.
@@ -63,13 +64,10 @@ The root path `/` has no endpoint and returns `404`.
 | `POST /login` | Verify email/password and issue a JWT | `200`, access token |
 | `PUT /update` | Update selected fields of the authenticated user | `200`, public user details |
 
-Names are trimmed and must contain 1–50 characters. Emails are checked for valid format and must be unique in the database. Registration and login schemas require passwords of at least 8 characters. bcrypt accepts at most 72 UTF-8 bytes; the hashing helper rejects longer passwords, but registration does not yet translate that failure into a validation response.
+* Names are trimmed and must contain 1–50 characters. 
+* Emails are checked for valid format and must be unique in the database. 
+* Registration and login schemas require passwords of at least 8 characters. 
 
-Despite using `PUT` as required by the assignment, `/update` applies partial updates. It accepts `first_name`, `last_name`, and `email`; omitted fields remain unchanged. Empty requests, explicit `null`, and unsupported fields are rejected. Password changes are not implemented.
-
-Authentication middleware verifies the Bearer token before allowing updates. The token's user ID determines whose account changes. Missing/invalid tokens or nonexistent users return `401`; duplicate emails return `409`; request validation errors return `422`. A rejected duplicate-email update rolls back every requested change.
-
-Passwords and password hashes are not included in successful API responses.
 
 ### Try the flow in Swagger UI
 
@@ -78,7 +76,6 @@ Passwords and password hashes are not included in successful API responses.
 3. Click **Authorize** and paste only the token, without the `Bearer` prefix or quotes.
 4. Execute `/update` with a body such as `{"first_name": "Updated"}`.
 
-Swagger adds the `Authorization: Bearer <token>` header to the protected request. Logging in alone does not automatically authorize later requests.
 
 ### Example requests with curl
 
@@ -109,32 +106,12 @@ curl -i -X PUT http://127.0.0.1:8000/update \
 
 Reusing the registration email returns `409`. An update without its Authorization header returns `401`.
 
-## Tests
+### Token expiration
 
-Run from the project root with `.venv` activated. No running Uvicorn server is needed.
+Tokens expire after 15 minutes, configured by `JWT_EXPIRE_MINUTES` in `app/.env`. Expired tokens return `401`; log in again to obtain a new token. Verification requires an expiration claim, so older tokens without `exp` are also rejected.
 
-Database construction, insertion/readback, and email uniqueness checks:
-
-```bash
-python -m tests.check_database
-```
-
-Login and update tests:
+Run the expiration tests from the project root with `.venv` activated:
 
 ```bash
-python -m unittest discover -s tests -p 'test_*.py' -v
+python -m unittest discover -s tests -p test_token_expiration.py -v
 ```
-
-Only the HTTP update tests:
-
-```bash
-python -m unittest discover -s tests -p test_update.py -v
-```
-
-Tests use temporary in-memory databases. Login and update tests use test signing keys, leaving `users.db` and the real signing key unchanged. Login tests call the function directly; update tests use `TestClient` to exercise HTTP requests, middleware, validation, and persistence.
-
-## Learning checkpoints and next steps
-
-Implemented: registration, input validation, SQLite persistence, bcrypt hashing, JWT login, authentication middleware, partial profile updates, and database/login/update checks.
-
-Assignment bonuses remain: token expiration, authenticated `GET /profile`, caching with invalidation after updates, and Docker packaging. Current tokens have no expiration. Login also currently uses different error messages for unknown email and incorrect password; a shared invalid-credentials message is a follow-up improvement.
