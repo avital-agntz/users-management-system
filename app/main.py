@@ -21,10 +21,13 @@ bearer_scheme = HTTPBearer(auto_error=False)
 @app.middleware("http")
 async def authenticate_update(request: Request, call_next):
     """
-    Middleware to authenticate requests to the /update endpoint.
+    Middleware called by FastAPI whenever an HTTP request arrives.
+    Serves to authenticate requests to the /update and /profile endpoint.
     """
-    # cheking if the request is a PUT/update endpoint
-    if request.method == "PUT" and request.url.path == "/update":
+    # cheking if the given request needs token verification
+    if (request.method == "PUT" and request.url.path == "/update") or (
+        request.method == "GET" and request.url.path == "/profile"
+    ):
         # extract Authorization
         authorization = request.headers.get("Authorization", "")
         parts = authorization.split()
@@ -50,7 +53,7 @@ async def authenticate_update(request: Request, call_next):
 
         request.state.user_id = user_id
 
-    # pass the request to the next middleware or endpoint
+    # authentication passed - continue to the next middleware or endpoint
     return await call_next(request)
 
 
@@ -157,6 +160,36 @@ def update(
                     ) from None
             raise
         session.refresh(db_user)
+
+        return {
+            "id": db_user.id,
+            "first_name": db_user.first_name,
+            "last_name": db_user.last_name,
+            "email": db_user.email,
+        }
+
+
+@app.get("/profile")
+def profile(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+):
+    """
+    Returns the profile information of the authenticated user.
+    """
+    user_id = request.state.user_id
+
+    with SessionLocal() as session:
+        # Find the user in the database
+        db_user = session.get(User, user_id)
+
+        # If the user does not exist in the database
+        if db_user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="User no longer exists.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         return {
             "id": db_user.id,
