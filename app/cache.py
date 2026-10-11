@@ -8,12 +8,7 @@ from dotenv import load_dotenv
 from pydantic import ValidationError
 from redis.exceptions import RedisError
 
-if __package__:
-    # launch as a module, e.g. `python -m app.cache`
-    from .schemas import UserResponse
-else:
-    # launch as a script, e.g. `python app/cache.py`
-    from schemas import UserResponse
+from app.schemas import UserResponse
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 logger = logging.getLogger(__name__)

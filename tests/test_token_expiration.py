@@ -1,9 +1,7 @@
 """Check token expiration without waiting or accessing the real database."""
 
-import sys
 import unittest
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from unittest.mock import patch
 
 import jwt
@@ -12,8 +10,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Match the application's current direct-file imports.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
 
 TEST_KEY = "expiration-test-key-0123456789abcdef0123456789"
 with patch.dict("os.environ", {
@@ -21,10 +17,10 @@ with patch.dict("os.environ", {
     "JWT_ALGORITHM": "HS256",
     "JWT_EXPIRE_MINUTES": "15",
 }):
-    import main
-    import security
+    from app import main
+    from app import security
 
-from models import Base, User
+from app.models import Base, User
 
 
 class TokenExpirationTests(unittest.TestCase):

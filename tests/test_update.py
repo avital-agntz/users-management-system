@@ -2,9 +2,7 @@
 Test update requests through middleware, validation, and database storage.
 """
 
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 import jwt
@@ -13,15 +11,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Support the application's current direct-file imports.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
 
 TEST_KEY = "test-only-key-0123456789abcdef0123456789abcdef"
 with patch.dict("os.environ", {"JWT_SECRET_KEY": TEST_KEY, "JWT_ALGORITHM": "HS256"}):
-    import main
-    import security
+    from app import main
+    from app import security
 
-from models import Base, User
+from app.models import Base, User
 
 
 class UpdateTests(unittest.TestCase):

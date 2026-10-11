@@ -2,9 +2,7 @@
 Check login logic without accessing users.db or the real signing key.
 """
 
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 import jwt
@@ -12,8 +10,6 @@ from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# The application currently uses imports such as `from models import User`.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
 
 with patch.dict(
     "os.environ",
@@ -22,11 +18,11 @@ with patch.dict(
         "JWT_ALGORITHM": "HS256",
     },
 ):
-    import main
-    import security
+    from app import main
+    from app import security
 
-from models import Base, User
-from schemas import LoginRequest
+from app.models import Base, User
+from app.schemas import LoginRequest
 
 
 class LoginTests(unittest.TestCase):

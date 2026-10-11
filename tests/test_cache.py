@@ -3,10 +3,8 @@ Check profile caching without accessing live Redis or users.db.
 """
 
 import json
-import sys
 import unittest
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from unittest.mock import patch
 
 import jwt
@@ -16,15 +14,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Support the application's current imports when tests run from the project root.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
 TEST_KEY = "cache-test-key-0123456789abcdef0123456789abcdef"
 with patch.dict("os.environ", {"JWT_SECRET_KEY": TEST_KEY, "JWT_ALGORITHM": "HS256"}):
-    import cache
-    import main
-    import security
+    from app import cache
+    from app import main
+    from app import security
 
-from models import Base, User
+from app.models import Base, User
 
 
 class FakeRedis:
@@ -179,14 +175,14 @@ class CacheTests(unittest.TestCase):
         ]:
             with self.subTest(value=value):
                 self.redis.set(self.key, value, ex=60)
-                with self.assertLogs("cache", level="WARNING"):
+                with self.assertLogs("app.cache", level="WARNING"):
                     response = self.get_profile()
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.json(), self.expected)
 
     def test_redis_read_failure_falls_back_to_database(self):
         self.redis.fail_get = True
-        with self.assertLogs("cache", level="WARNING"):
+        with self.assertLogs("app.cache", level="WARNING"):
             response = self.get_profile()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), self.expected)
@@ -194,7 +190,7 @@ class CacheTests(unittest.TestCase):
     def test_failed_refresh_deletes_old_entry(self):
         self.get_profile()
         self.redis.fail_set = True
-        with self.assertLogs("cache", level="WARNING"):
+        with self.assertLogs("app.cache", level="WARNING"):
             response = self.client.put(
                 "/update", headers=self.headers, json={"first_name": "Updated"}
             )
@@ -207,7 +203,7 @@ class CacheTests(unittest.TestCase):
     def test_failed_write_and_delete_do_not_undo_database_update(self):
         self.get_profile()
         self.redis.fail_set = self.redis.fail_delete = True
-        with self.assertLogs("cache", level="WARNING"):
+        with self.assertLogs("app.cache", level="WARNING"):
             response = self.client.put(
                 "/update", headers=self.headers, json={"first_name": "Updated"}
             )

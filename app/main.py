@@ -1,12 +1,12 @@
-from cache import cache_profile, get_cached_profile
-from database import SessionLocal
+from app.cache import cache_profile, get_cached_profile
+from app.database import SessionLocal
 from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError
-from models import User
-from schemas import LoginRequest, RegisterRequest, UpdateRequest
-from security import (
+from app.models import User
+from app.schemas import LoginRequest, RegisterRequest, UpdateRequest
+from app.security import (
     create_access_token,
     hash_password,
     verify_access_token,
@@ -226,4 +226,4 @@ def profile(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", reload=True)
+    uvicorn.run("app.main:app", reload=True)
