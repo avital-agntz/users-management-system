@@ -15,7 +15,7 @@ else:
     # launch as a script, e.g. `python app/cache.py`
     from schemas import UserResponse
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 logger = logging.getLogger(__name__)
 
 # Time to live for cached profile data in seconds

@@ -11,7 +11,7 @@ import jwt
 from dotenv import load_dotenv
 
 # JWT tokenization
-env_path = Path(__file__).resolve().parent / ".env"
+env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(env_path)
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
