@@ -157,12 +157,6 @@ __pycache__/
 .DS_Store
 
 
-# Local LLM-call cache (pipeline.py --cache / evaluate.py judge cache)
-output/.cache/
-
-# Claude Code project instructions (local dev aid, not part of the portfolio repo)
-CLAUDE.md
-
 # Files
 FastAPI_User_Management_Learning_Primer.pdf
 Users Management System.pdf
@@ -172,3 +166,6 @@ users.db
 users.db-journal
 users.db-wal
 users.db-shm
+
+# Local Redis snapshots
+dump.rdb
