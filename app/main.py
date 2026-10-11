@@ -1,3 +1,4 @@
+from cache import cache_profile, get_cached_profile
 from database import SessionLocal
 from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.responses import JSONResponse
@@ -121,6 +122,10 @@ def update(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
 ):
+    """
+    Updates the profile information of the authenticated user.
+    The user must provide at least one field to update (first name, last name, or email).
+    """
     user_id = request.state.user_id
 
     with SessionLocal() as session:
@@ -161,12 +166,17 @@ def update(
             raise
         session.refresh(db_user)
 
-        return {
+        profile_data = {
             "id": db_user.id,
             "first_name": db_user.first_name,
             "last_name": db_user.last_name,
             "email": db_user.email,
         }
+
+        # cache the updated profile data in Redis for future requests
+        cache_profile(profile_data)
+
+        return profile_data
 
 
 @app.get("/profile")
@@ -176,14 +186,24 @@ def profile(
 ):
     """
     Returns the profile information of the authenticated user.
+    If the profile data is cached in Redis, it will be returned from the cache.
+    Otherwise, it will be retrieved from the database and cached for future requests.
     """
     user_id = request.state.user_id
 
+    # try to retrieve the cached profile data from Redis
+    cached_profile = get_cached_profile(user_id)
+
+    # if the cached profile data is found and valid, return it
+    if cached_profile is not None:
+        return cached_profile.model_dump(mode="json")
+
+    # Else, retrieve the profile data from the database and cache it
     with SessionLocal() as session:
-        # Find the user in the database
+        # find the user in the database
         db_user = session.get(User, user_id)
 
-        # If the user does not exist in the database
+        # if the user does not exist in the database
         if db_user is None:
             raise HTTPException(
                 status_code=401,
@@ -191,12 +211,16 @@ def profile(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        return {
+        profile_data = {
             "id": db_user.id,
             "first_name": db_user.first_name,
             "last_name": db_user.last_name,
             "email": db_user.email,
         }
+
+        # cache the profile data in Redis for future requests
+        cache_profile(profile_data)
+        return profile_data
 
 
 if __name__ == "__main__":

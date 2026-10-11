@@ -13,6 +13,10 @@ from pydantic import (
 
 
 class RegisterRequest(BaseModel):
+    """
+    Register request consists of first name, last name, email and password, all required.
+    """
+
     first_name: str = Field(min_length=1, max_length=50)
     last_name: str = Field(min_length=1, max_length=50)
     email: EmailStr
@@ -27,11 +31,20 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
+    """
+    Login request consists of email and password, both required
+    """
+
     email: EmailStr
     password: str = Field(min_length=8)
 
 
 class UpdateRequest(BaseModel):
+    """
+    Update request consists of first name, last name, and email, all optional.
+    At least one field must be provided for update.
+    """
+
     # Model configuration to forbid extra fields
     model_config = ConfigDict(extra="forbid")
 
@@ -59,3 +72,17 @@ class UpdateRequest(BaseModel):
                 raise ValueError(f"{field} cannot be null.")
 
         return self
+
+
+class UserResponse(BaseModel):
+    """
+    User response model for returning user profile information.
+    It includes id, first name, last name, and email.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: int = Field(gt=0)
+    first_name: str = Field(min_length=1, max_length=50)
+    last_name: str = Field(min_length=1, max_length=50)
+    email: EmailStr
