@@ -1,5 +1,5 @@
 """
-Hash passwords for storage and verify them during login.
+Provide FastAPI authentication dependencies that validate Bearer tokens and return user IDs.
 """
 
 import os

@@ -1,61 +1,19 @@
+from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+
 from app.cache import cache_profile, get_cached_profile
 from app.database import SessionLocal
-from fastapi import FastAPI, HTTPException, Request, Security
-from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import InvalidTokenError
+from app.dependencies import get_current_user_id
 from app.models import User
 from app.schemas import LoginRequest, RegisterRequest, UpdateRequest
 from app.security import (
     create_access_token,
     hash_password,
-    verify_access_token,
     verify_password,
 )
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 
 app = FastAPI()
-bearer_scheme = HTTPBearer(auto_error=False)
-
-
-@app.middleware("http")
-async def authenticate_update(request: Request, call_next):
-    """
-    Middleware called by FastAPI whenever an HTTP request arrives.
-    Serves to authenticate requests to the /update and /profile endpoint.
-    """
-    # cheking if the given request needs token verification
-    if (request.method == "PUT" and request.url.path == "/update") or (
-        request.method == "GET" and request.url.path == "/profile"
-    ):
-        # extract Authorization
-        authorization = request.headers.get("Authorization", "")
-        parts = authorization.split()
-
-        # check if the Authorization header is valid
-        if len(parts) != 2 or parts[0].lower() != "bearer":
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Missing or invalid authentication credentials."},
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # extract the token and verify it
-        token = parts[1]
-        try:
-            user_id = verify_access_token(token)
-        except InvalidTokenError:
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Missing or invalid authentication credentials."},
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        request.state.user_id = user_id
-
-    # authentication passed - continue to the next middleware or endpoint
-    return await call_next(request)
 
 
 @app.post("/register", status_code=201)
@@ -100,16 +58,13 @@ def login(user: LoginRequest):
     # Finding user and verify password
     with SessionLocal() as session:
         existing_user = session.scalar(select(User).where(User.email == user.email))
-        # If the user does not exists
-        if existing_user is None:
-            raise HTTPException(status_code=401, detail="Email is not registered.")
-        # If the submitted password does not match the stored hash
-        elif not verify_password(
+        # Use the same response for unknown accounts and incorrect passwords.
+        if existing_user is None or not verify_password(
             password=user.password, password_hash=existing_user.password_hash
         ):
             raise HTTPException(
                 status_code=401,
-                detail="password is inccorrect for the registered user.",
+                detail="Invalid email or password",
             )
         # else, we issue token for successful log-in
         token = create_access_token(existing_user.id)
@@ -119,15 +74,12 @@ def login(user: LoginRequest):
 @app.put("/update")
 def update(
     changes: UpdateRequest,
-    request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+    user_id: int = Depends(get_current_user_id),
 ):
     """
     Updates the profile information of the authenticated user.
     The user must provide at least one field to update (first name, last name, or email).
     """
-    user_id = request.state.user_id
-
     with SessionLocal() as session:
         db_user = session.get(User, user_id)
 
@@ -180,17 +132,12 @@ def update(
 
 
 @app.get("/profile")
-def profile(
-    request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
-):
+def profile(user_id: int = Depends(get_current_user_id)):
     """
     Returns the profile information of the authenticated user.
     If the profile data is cached in Redis, it will be returned from the cache.
     Otherwise, it will be retrieved from the database and cached for future requests.
     """
-    user_id = request.state.user_id
-
     # try to retrieve the cached profile data from Redis
     cached_profile = get_cached_profile(user_id)
 

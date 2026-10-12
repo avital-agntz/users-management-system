@@ -10,7 +10,6 @@ from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-
 with patch.dict(
     "os.environ",
     {
@@ -75,6 +74,7 @@ class LoginTests(unittest.TestCase):
                 LoginRequest(email="avital@example.com", password="incorrect123")
             )
         self.assertEqual(caught.exception.status_code, 401)
+        self.assertEqual(caught.exception.detail, "Invalid email or password")
 
     def test_unknown_email_is_rejected(self):
         with self.assertRaises(HTTPException) as caught:
@@ -82,6 +82,7 @@ class LoginTests(unittest.TestCase):
                 LoginRequest(email="unknown@example.com", password=self.password)
             )
         self.assertEqual(caught.exception.status_code, 401)
+        self.assertEqual(caught.exception.detail, "Invalid email or password")
 
     def test_token_signed_with_another_key_is_rejected(self):
         response = main.login(

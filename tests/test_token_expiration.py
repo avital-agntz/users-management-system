@@ -10,7 +10,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-
 TEST_KEY = "expiration-test-key-0123456789abcdef0123456789"
 with patch.dict("os.environ", {
     "JWT_SECRET_KEY": TEST_KEY,

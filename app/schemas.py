@@ -2,14 +2,8 @@
 Module for requests validations - describes and validates data sent to or returned by the API.
 """
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    EmailStr,
-    Field,
-    field_validator,
-    model_validator,
-)
+from pydantic import (BaseModel, ConfigDict, EmailStr, Field, field_validator,
+                      model_validator)
 
 
 class RegisterRequest(BaseModel):

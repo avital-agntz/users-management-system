@@ -6,9 +6,10 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from app.models import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from app.models import Base
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 

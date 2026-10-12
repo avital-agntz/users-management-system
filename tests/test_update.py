@@ -11,7 +11,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-
 TEST_KEY = "test-only-key-0123456789abcdef0123456789abcdef"
 with patch.dict("os.environ", {"JWT_SECRET_KEY": TEST_KEY, "JWT_ALGORITHM": "HS256"}):
     from app import main
