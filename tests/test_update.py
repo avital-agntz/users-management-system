@@ -3,7 +3,7 @@ Test update requests through middleware, validation, and database storage.
 """
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import jwt
 from fastapi.testclient import TestClient
@@ -12,9 +12,20 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 TEST_KEY = "test-only-key-0123456789abcdef0123456789abcdef"
-with patch.dict("os.environ", {"JWT_SECRET_KEY": TEST_KEY, "JWT_ALGORITHM": "HS256"}):
-    from app import main
-    from app import security
+# Import the application with explicit test configuration, without reading .env.
+from app.core.config import Settings
+
+IMPORT_SETTINGS = Settings(
+    _env_file=None,
+    jwt_secret_key=TEST_KEY,
+    database_url="sqlite:///:memory:",
+    redis_url="redis://127.0.0.1:6379/15",
+    jwt_algorithm="HS256",
+    jwt_expire_minutes=15,
+    profile_cache_ttl_seconds=60,
+)
+with patch("app.core.config.get_settings", return_value=IMPORT_SETTINGS):
+    from app import cache, main, security
 
 from app.models import Base, User
 
@@ -35,12 +46,18 @@ class UpdateTests(unittest.TestCase):
         # Replace application configuration only for this test; cleanup restores it.
         for target, name, value in [
             (main, "SessionLocal", self.sessions),
-            (security, "JWT_SECRET_KEY", TEST_KEY),
-            (security, "JWT_ALGORITHM", "HS256"),
+            (security, "settings", IMPORT_SETTINGS.model_copy()),
         ]:
             replacement = patch.object(target, name, value)
             replacement.start()
             self.addCleanup(replacement.stop)
+
+        # Update tests exercise database behavior, not a running Redis service.
+        redis_client = MagicMock()
+        redis_client.get.return_value = None
+        cache_patch = patch.object(cache, "redis_client", redis_client)
+        cache_patch.start()
+        self.addCleanup(cache_patch.stop)
 
         self.client = self.enterContext(TestClient(main.app))
         self.password = "learning123"

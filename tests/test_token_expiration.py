@@ -11,13 +11,20 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 TEST_KEY = "expiration-test-key-0123456789abcdef0123456789"
-with patch.dict("os.environ", {
-    "JWT_SECRET_KEY": TEST_KEY,
-    "JWT_ALGORITHM": "HS256",
-    "JWT_EXPIRE_MINUTES": "15",
-}):
-    from app import main
-    from app import security
+# Import the application with explicit test configuration, without reading .env.
+from app.core.config import Settings
+
+IMPORT_SETTINGS = Settings(
+    _env_file=None,
+    jwt_secret_key=TEST_KEY,
+    database_url="sqlite:///:memory:",
+    redis_url="redis://127.0.0.1:6379/15",
+    jwt_algorithm="HS256",
+    jwt_expire_minutes=15,
+    profile_cache_ttl_seconds=60,
+)
+with patch("app.core.config.get_settings", return_value=IMPORT_SETTINGS):
+    from app import main, security
 
 from app.models import Base, User
 
@@ -25,14 +32,9 @@ from app.models import Base, User
 class TokenExpirationTests(unittest.TestCase):
     def setUp(self):
         # Each test gets predictable configuration, restored afterward.
-        for name, value in [
-            ("JWT_SECRET_KEY", TEST_KEY),
-            ("JWT_ALGORITHM", "HS256"),
-            ("JWT_EXPIRE_MINUTES", 15),
-        ]:
-            replacement = patch.object(security, name, value)
-            replacement.start()
-            self.addCleanup(replacement.stop)
+        replacement = patch.object(security, "settings", IMPORT_SETTINGS.model_copy())
+        replacement.start()
+        self.addCleanup(replacement.stop)
 
     def test_new_token_expires_in_fifteen_minutes(self):
         before = datetime.now(timezone.utc).timestamp()

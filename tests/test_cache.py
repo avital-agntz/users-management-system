@@ -15,10 +15,20 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 TEST_KEY = "cache-test-key-0123456789abcdef0123456789abcdef"
-with patch.dict("os.environ", {"JWT_SECRET_KEY": TEST_KEY, "JWT_ALGORITHM": "HS256"}):
-    from app import cache
-    from app import main
-    from app import security
+# Import the application with explicit test configuration, without reading .env.
+from app.core.config import Settings
+
+IMPORT_SETTINGS = Settings(
+    _env_file=None,
+    jwt_secret_key=TEST_KEY,
+    database_url="sqlite:///:memory:",
+    redis_url="redis://127.0.0.1:6379/15",
+    jwt_algorithm="HS256",
+    jwt_expire_minutes=15,
+    profile_cache_ttl_seconds=60,
+)
+with patch("app.core.config.get_settings", return_value=IMPORT_SETTINGS):
+    from app import cache, main, security
 
 from app.models import Base, User
 
@@ -73,10 +83,8 @@ class CacheTests(unittest.TestCase):
         for target, name, value in [
             (main, "SessionLocal", self.sessions),
             (cache, "redis_client", self.redis),
-            (cache, "PROFILE_CACHE_TTL_SECONDS", 60),
-            (security, "JWT_SECRET_KEY", TEST_KEY),
-            (security, "JWT_ALGORITHM", "HS256"),
-            (security, "JWT_EXPIRE_MINUTES", 15),
+            (cache, "settings", IMPORT_SETTINGS.model_copy()),
+            (security, "settings", IMPORT_SETTINGS.model_copy()),
         ]:
             replacement = patch.object(target, name, value)
             replacement.start()

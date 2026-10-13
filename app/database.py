@@ -2,20 +2,14 @@
 Defines and connects the database.
 """
 
-import os
-from pathlib import Path
-
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.core.config import get_settings
 from app.models import Base
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./users.db")
-
-engine = create_engine(DATABASE_URL)
+settings = get_settings()
+engine = create_engine(settings.database_url)
 SessionLocal = sessionmaker(bind=engine)
 
 if __name__ == "__main__":

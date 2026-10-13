@@ -1,24 +1,19 @@
 import json
 import logging
-import os
-from pathlib import Path
 
 import redis
-from dotenv import load_dotenv
 from pydantic import ValidationError
 from redis.exceptions import RedisError
 
+from app.core.config import get_settings
 from app.schemas import UserResponse
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+settings = get_settings()
 logger = logging.getLogger(__name__)
-
-# Time to live for cached profile data in seconds
-PROFILE_CACHE_TTL_SECONDS = int(os.getenv("PROFILE_CACHE_TTL_SECONDS", "120"))
 
 # configure Redis client
 redis_client = redis.Redis.from_url(
-    os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
+    settings.redis_url,
     decode_responses=True,
     socket_connect_timeout=1,
     socket_timeout=1,
@@ -37,7 +32,7 @@ def cache_profile(profile: dict) -> None:
         redis_client.set(
             key,
             value,
-            ex=PROFILE_CACHE_TTL_SECONDS,
+            ex=settings.profile_cache_ttl_seconds,
         )
     except RedisError:
         logger.warning("Could not write the updated profile to Redis.")

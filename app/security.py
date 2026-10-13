@@ -2,24 +2,14 @@
 Provide FastAPI authentication dependencies that validate Bearer tokens and return user IDs.
 """
 
-import os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import bcrypt
 import jwt
-from dotenv import load_dotenv
 
-# JWT tokenization
-env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(env_path)
+from app.core.config import get_settings
 
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "15"))
-
-if not JWT_SECRET_KEY:
-    raise RuntimeError("JWT_SECRET_KEY is missing from configuration.")
+settings = get_settings()
 
 
 def hash_password(password: str) -> str:
@@ -52,7 +42,9 @@ def create_access_token(user_id: int) -> str:
     """
     Creates access tocken for user uppon login
     """
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.jwt_expire_minutes
+    )
     # subject is the user id and token expiration time
     payload = {
         "sub": str(user_id),
@@ -61,8 +53,8 @@ def create_access_token(user_id: int) -> str:
 
     return jwt.encode(
         payload,
-        JWT_SECRET_KEY,
-        algorithm=JWT_ALGORITHM,
+        settings.jwt_secret_key.get_secret_value(),
+        algorithm=settings.jwt_algorithm,
     )
 
 
@@ -73,8 +65,8 @@ def verify_access_token(token: str) -> int:
     # Decode the token and validate its structure
     payload = jwt.decode(
         token,
-        JWT_SECRET_KEY,
-        algorithms=[JWT_ALGORITHM],
+        settings.jwt_secret_key.get_secret_value(),
+        algorithms=[settings.jwt_algorithm],
         options={"require": ["sub", "exp"]},
     )
 

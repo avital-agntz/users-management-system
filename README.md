@@ -9,7 +9,8 @@ FastAPI service for user registration, JWT authentication, and profile managemen
 - **Profile management:** authenticated retrieval and partial updates.
 - **Redis caching:** profile caching with TTL, refresh after updates, and database fallback.
 - **Docker Compose:** API and Redis containers with persistent SQLite storage.
-- **Testing:** automated database, login, update, expiration, and cache checks.
+- **Configuration:** centralized, validated settings using pydantic-settings.
+- **Testing:** automated configuration, database, login, update, expiration, and cache checks.
 
 ## Setup and run
 
@@ -33,6 +34,8 @@ DATABASE_URL=sqlite:///./users.db
 REDIS_URL=redis://127.0.0.1:6379/0
 PROFILE_CACHE_TTL_SECONDS=120
 ```
+
+`Settings` in `app/core/config.py` loads the root `.env`; environment variables take precedence. `JWT_SECRET_KEY` and `DATABASE_URL` are required and cannot be empty. Missing or invalid settings stop startup with a validation error naming the field. Token and cache lifetimes must be positive integers.
 
 For local execution, install Redis (`brew install redis` on macOS) and start it in a separate terminal:
 
@@ -121,8 +124,7 @@ Run with the local virtual environment activated; no API server is needed.
 
 ```bash
 python -m tests.check_database
-REDIS_URL=redis://127.0.0.1:6379/15 \
-  python -m unittest discover -s tests -p 'test_*.py' -v
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Tests use temporary SQLite databases, test signing keys, and fake Redis for cache checks; reserve Redis database `15` for the update tests in the full suite.
+Tests use explicit test settings, temporary SQLite databases, and fake or mocked Redis; no running Redis server or real `.env` is required. Configuration tests cover required values, duration validation, and secret-safe error messages.
