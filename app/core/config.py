@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     jwt_secret_key: SecretStr = Field(min_length=1)
     database_url: str = Field(min_length=1)
+    test_database_url: SecretStr | None = None
 
     jwt_algorithm: Literal["HS256"] = "HS256"
     jwt_expire_minutes: int = Field(default=15, gt=0)

@@ -1,12 +1,14 @@
 fastapi
 uvicorn
 pydantic
+pydantic-settings
 email-validator
 sqlalchemy
+psycopg[binary]
 bcrypt
 PyJWT
 python-dotenv
 isort
 httpx
 redis
-pydantic-settings
+alembic

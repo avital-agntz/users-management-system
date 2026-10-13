@@ -7,11 +7,7 @@ from app.database import SessionLocal
 from app.dependencies import get_current_user_id
 from app.models import User
 from app.schemas import LoginRequest, RegisterRequest, UpdateRequest
-from app.security import (
-    create_access_token,
-    hash_password,
-    verify_password,
-)
+from app.security import create_access_token, hash_password, verify_password
 
 app = FastAPI()
 
