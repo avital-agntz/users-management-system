@@ -7,7 +7,6 @@ from unittest.mock import patch
 
 import jwt
 from fastapi import HTTPException
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 # Import the application with explicit test configuration, without reading .env.
@@ -16,7 +15,7 @@ from app.core.config import Settings
 IMPORT_SETTINGS = Settings(
     _env_file=None,
     jwt_secret_key="test-only-key-0123456789abcdef0123456789abcdef",
-    database_url="sqlite:///:memory:",
+    database_url="postgresql+psycopg://app:test@127.0.0.1:5432/app_test",
     redis_url="redis://127.0.0.1:6379/15",
     jwt_algorithm="HS256",
     jwt_expire_minutes=15,
@@ -25,15 +24,14 @@ IMPORT_SETTINGS = Settings(
 with patch("app.core.config.get_settings", return_value=IMPORT_SETTINGS):
     from app import main, security
 
-from app.models import Base, User
+from app.models import User
+from tests.database_fixture import isolated_database
 from app.schemas import LoginRequest
 
 
 class LoginTests(unittest.TestCase):
     def setUp(self):
-        self.engine = create_engine("sqlite:///:memory:")
-        self.addCleanup(self.engine.dispose)
-        Base.metadata.create_all(self.engine)
+        self.engine = self.enterContext(isolated_database())
         self.sessions = sessionmaker(bind=self.engine)
 
         session_patch = patch.object(main, "SessionLocal", self.sessions)

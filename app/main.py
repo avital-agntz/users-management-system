@@ -1,7 +1,10 @@
 from fastapi import Depends, FastAPI, HTTPException
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from fastapi.responses import JSONResponse
+from redis.exceptions import RedisError
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app import cache, database
 from app.cache import cache_profile, get_cached_profile
 from app.database import SessionLocal
 from app.dependencies import get_current_user_id
@@ -10,6 +13,35 @@ from app.schemas import LoginRequest, RegisterRequest, UpdateRequest
 from app.security import create_access_token, hash_password, verify_password
 
 app = FastAPI()
+
+
+@app.get("/health")
+def health():
+    """
+    Report dependency availability without exposing connection details.
+    """
+    failed = []
+    # Check database connection first
+    try:
+        with database.engine.connect() as connection:
+            if connection.execute(text("SELECT 1")).scalar() != 1:
+                failed.append("database")
+    except SQLAlchemyError:
+        failed.append("database")
+
+    # Check Redis even when the database check fails.
+    try:
+        if not cache.redis_client.ping():
+            failed.append("redis")
+    except RedisError:
+        failed.append("redis")
+
+    if failed:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "failed_dependencies": failed},
+        )
+    return {"status": "healthy"}
 
 
 @app.post("/register", status_code=201)

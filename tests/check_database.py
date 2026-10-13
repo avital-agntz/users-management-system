@@ -1,23 +1,20 @@
 """
-Check the user model using a temporary, in-memory SQLite database.
+Check the user model against the migrated PostgreSQL app_test database.
 """
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import Base, User
+from app.models import User
+from tests.database_fixture import isolated_database
 
 
 def test_db_construction():
     """
     Tests the database construction with its tables.
     """
-    # configure a temporary database in RAM
-    engine = create_engine("sqlite:///:memory:")
-    try:
-        # creates all tables defined with Base
-        Base.metadata.create_all(engine)
+    with isolated_database() as engine:
 
         # opening a session with the engine
         with Session(engine) as session:
@@ -26,20 +23,13 @@ def test_db_construction():
             assert users == [], "A new database should contain no users."
             print("Users:", users)
             print("Database check passed: the users table exists and is empty.")
-    # Disconnecting the engine connections
-    finally:
-        engine.dispose()
 
 
 def test_db_add_read():
     """
     Tests adding and reading users from User table.
     """
-    # configure a temporary database in RAM
-    engine = create_engine("sqlite:///:memory:")
-    try:
-        # creates all tables defined with Base
-        Base.metadata.create_all(engine)
+    with isolated_database() as engine:
 
         # opening a session with the engine
         with Session(engine) as session:
@@ -61,20 +51,13 @@ def test_db_add_read():
             assert saved_user.first_name == "Avital"
 
             print("Edit users check passed: the users table exists and is not empty.")
-    # Disconnecting the engine connections
-    finally:
-        engine.dispose()
 
 
 def test_duplicate_email():
     """
     Tests uniqueness of each email.
     """
-    # configure a temporary database in RAM
-    engine = create_engine("sqlite:///:memory:")
-    try:
-        # creates all tables defined with Base
-        Base.metadata.create_all(engine)
+    with isolated_database() as engine:
 
         with Session(engine) as session:
             first_user = User(
@@ -106,8 +89,6 @@ def test_duplicate_email():
             assert len(users) == 1
             assert users[0].first_name == "Avital"
             print("Duplicate email check passed.")
-    finally:
-        engine.dispose()
 
 
 if __name__ == "__main__":

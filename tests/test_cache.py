@@ -10,9 +10,7 @@ from unittest.mock import patch
 import jwt
 from fastapi.testclient import TestClient
 from redis.exceptions import ConnectionError
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 TEST_KEY = "cache-test-key-0123456789abcdef0123456789abcdef"
 # Import the application with explicit test configuration, without reading .env.
@@ -21,7 +19,7 @@ from app.core.config import Settings
 IMPORT_SETTINGS = Settings(
     _env_file=None,
     jwt_secret_key=TEST_KEY,
-    database_url="sqlite:///:memory:",
+    database_url="postgresql+psycopg://app:test@127.0.0.1:5432/app_test",
     redis_url="redis://127.0.0.1:6379/15",
     jwt_algorithm="HS256",
     jwt_expire_minutes=15,
@@ -30,7 +28,8 @@ IMPORT_SETTINGS = Settings(
 with patch("app.core.config.get_settings", return_value=IMPORT_SETTINGS):
     from app import cache, main, security
 
-from app.models import Base, User
+from app.models import User
+from tests.database_fixture import isolated_database
 
 
 class FakeRedis:
@@ -68,14 +67,8 @@ class FakeRedis:
 
 class CacheTests(unittest.TestCase):
     def setUp(self):
-        # Share one temporary connection across TestClient's request threads.
-        self.engine = create_engine(
-            "sqlite:///:memory:",
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-        )
-        self.addCleanup(self.engine.dispose)
-        Base.metadata.create_all(self.engine)
+        # Use migrated app_test; HTTP requests open their own sessions.
+        self.engine = self.enterContext(isolated_database())
         self.sessions = sessionmaker(bind=self.engine)
         self.redis = FakeRedis()
 

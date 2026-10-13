@@ -41,7 +41,7 @@ class DatabaseSetupTests(unittest.TestCase):
 
     def test_unsafe_target_never_runs_migrations(self):
         settings = Settings(
-            _env_file=None, jwt_secret_key="test-key", database_url="sqlite://",
+            _env_file=None, jwt_secret_key="test-key", database_url="postgresql+psycopg://app:test@localhost/app",
             test_database_url="postgresql+psycopg://app:test@localhost/app",
         )
         with patch("tests.setup_database.get_settings", return_value=settings), patch(

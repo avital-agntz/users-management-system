@@ -6,9 +6,7 @@ from unittest.mock import patch
 
 import jwt
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 TEST_KEY = "expiration-test-key-0123456789abcdef0123456789"
 # Import the application with explicit test configuration, without reading .env.
@@ -17,7 +15,7 @@ from app.core.config import Settings
 IMPORT_SETTINGS = Settings(
     _env_file=None,
     jwt_secret_key=TEST_KEY,
-    database_url="sqlite:///:memory:",
+    database_url="postgresql+psycopg://app:test@127.0.0.1:5432/app_test",
     redis_url="redis://127.0.0.1:6379/15",
     jwt_algorithm="HS256",
     jwt_expire_minutes=15,
@@ -26,7 +24,8 @@ IMPORT_SETTINGS = Settings(
 with patch("app.core.config.get_settings", return_value=IMPORT_SETTINGS):
     from app import main, security
 
-from app.models import Base, User
+from app.models import User
+from tests.database_fixture import isolated_database
 
 
 class TokenExpirationTests(unittest.TestCase):
@@ -64,14 +63,8 @@ class TokenExpirationTests(unittest.TestCase):
         self.assertEqual(caught.exception.claim, "exp")
 
     def test_expired_token_cannot_update_user(self):
-        # Share one temporary connection with TestClient's request threads.
-        engine = create_engine(
-            "sqlite:///:memory:",
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-        )
-        self.addCleanup(engine.dispose)
-        Base.metadata.create_all(engine)
+        # Use PostgreSQL for the HTTP check, with guarded test cleanup.
+        engine = self.enterContext(isolated_database())
         sessions = sessionmaker(bind=engine)
         replacement = patch.object(main, "SessionLocal", sessions)
         replacement.start()

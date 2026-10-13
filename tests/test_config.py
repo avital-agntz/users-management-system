@@ -16,7 +16,7 @@ class ConfigTests(unittest.TestCase):
         self.addCleanup(environment.stop)
         self.valid = {
             "jwt_secret_key": "test-only-secret-not-for-production",
-            "database_url": "sqlite:///:memory:",
+            "database_url": "postgresql+psycopg://app:test@127.0.0.1:5432/app_test",
         }
 
     def test_missing_jwt_key_names_required_field(self):
@@ -33,7 +33,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_valid_settings_load_defaults(self):
         settings = Settings(_env_file=None, **self.valid)
-        self.assertEqual(settings.database_url, "sqlite:///:memory:")
+        self.assertEqual(settings.database_url, "postgresql+psycopg://app:test@127.0.0.1:5432/app_test")
         self.assertEqual(settings.jwt_expire_minutes, 15)
         self.assertEqual(settings.profile_cache_ttl_seconds, 120)
         self.assertNotIn(self.valid["jwt_secret_key"], repr(settings))
