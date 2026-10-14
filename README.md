@@ -14,6 +14,83 @@ FastAPI service for user registration, JWT authentication, and profile managemen
 - **Configuration:** centralized, validated settings using pydantic-settings.
 - **Testing:** automated configuration, database, login, update, expiration, and cache checks.
 
+## Data model
+
+A repository can contain multiple named AI systems. Each system contains components, evidence records their source locations, and findings link to the evidence supporting a risk signal. Audit events record the actor and affected entity.
+
+Migration 2 adds the registry tables and database constraints. The diagram's mandatory evidence relationships describe the intended application invariant; minimum evidence counts, same-system evidence links, and insert-only audit behavior still require service-layer enforcement. Registry endpoints are not implemented yet.
+
+```mermaid
+erDiagram
+    USERS |o--o{ AI_SYSTEMS : owns
+    USERS ||--o{ AUDIT_EVENTS : performs
+    AI_SYSTEMS ||--o{ COMPONENTS : contains
+    AI_SYSTEMS ||--o{ FINDINGS : has
+    COMPONENTS ||--|{ EVIDENCE : "found at"
+    FINDINGS ||--|{ FINDING_EVIDENCE : "supported by"
+    EVIDENCE ||--o{ FINDING_EVIDENCE : supports
+
+    USERS {
+        int id PK
+        varchar email UK
+        varchar first_name
+        varchar last_name
+        varchar password_hash
+    }
+    AI_SYSTEMS {
+        int id PK
+        varchar name "unique with repository_url"
+        varchar repository_url
+        varchar environment "dev, staging or prod"
+        int owner_user_id FK "nullable"
+        varchar manifest_sha256 UK "64 lowercase hex characters"
+        timestamptz created_at
+    }
+    COMPONENTS {
+        int id PK
+        int system_id FK
+        varchar kind "model, framework, tool, mcp_server, vendor, data_source"
+        varchar name
+        varchar version "nullable"
+        jsonb attributes
+    }
+    EVIDENCE {
+        int id PK
+        int component_id FK
+        varchar commit_sha "40 lowercase hex characters"
+        varchar file_path "relative, no .."
+        int line_start "at least 1"
+        int line_end "CHECK line_end >= line_start"
+        varchar detector
+        varchar snippet_sha256 "nullable, 64 lowercase hex characters"
+    }
+    FINDINGS {
+        int id PK
+        int system_id FK
+        varchar rule_id
+        varchar severity "low, medium or high"
+        varchar status "open, accepted or dismissed"
+        text message "a risk signal, not a verdict"
+        varchar fingerprint "unique with system_id and rule_id"
+        timestamptz created_at
+    }
+    FINDING_EVIDENCE {
+        int finding_id PK,FK
+        int evidence_id PK,FK
+    }
+    AUDIT_EVENTS {
+        int id PK
+        int actor_user_id FK
+        varchar action
+        varchar entity_type
+        int entity_id
+        jsonb details
+        timestamptz created_at "insert only"
+    }
+```
+
+`audit_events.entity_type` and `entity_id` identify a target in different tables, so `entity_id` has no foreign key.
+
 ## Setup and run
 
 For local development, use Python 3.14 and PostgreSQL; Redis is needed for caching and a healthy health response. Docker Compose provides the database and the containerized application stack. Run commands from the project root.

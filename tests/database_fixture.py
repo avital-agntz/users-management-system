@@ -26,12 +26,12 @@ def isolated_database():
         guard.commit()
         try:
             with engine.begin() as connection:
-                connection.execute(text("TRUNCATE TABLE users RESTART IDENTITY"))
+                connection.execute(text("TRUNCATE TABLE finding_evidence, evidence, findings, components, audit_events, ai_systems, users RESTART IDENTITY"))
             yield engine
         finally:
             try:
                 with engine.begin() as connection:
-                    connection.execute(text("TRUNCATE TABLE users RESTART IDENTITY"))
+                    connection.execute(text("TRUNCATE TABLE finding_evidence, evidence, findings, components, audit_events, ai_systems, users RESTART IDENTITY"))
             finally:
                 guard.execute(text("SELECT pg_advisory_unlock(714021)"))
                 guard.commit()
