@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Index,
     String,
     Text,
     UniqueConstraint,
@@ -85,6 +86,7 @@ class Component(Base):
     __tablename__ = "components"
 
     __table_args__ = (
+        UniqueConstraint("system_id", "kind", "name", name="uq_components_system_kind_name"),
         CheckConstraint(
             # Ensure AI component kind is one of the allowed values
             "kind IN ('model', 'framework', 'tool', 'mcp_server', 'vendor', 'data_source')",
@@ -98,7 +100,7 @@ class Component(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    system_id: Mapped[int] = mapped_column(ForeignKey("ai_systems.id"), nullable=False)
+    system_id: Mapped[int] = mapped_column(ForeignKey("ai_systems.id"), nullable=False, index=True)
     kind: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     version: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -132,7 +134,7 @@ class Evidence(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     component_id: Mapped[int] = mapped_column(
-        ForeignKey("components.id"), nullable=False
+        ForeignKey("components.id"), nullable=False, index=True
     )
     commit_sha: Mapped[str] = mapped_column(String(40), nullable=False)
     file_path: Mapped[str] = mapped_column(String, nullable=False)
@@ -164,7 +166,7 @@ class Finding(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    system_id: Mapped[int] = mapped_column(ForeignKey("ai_systems.id"), nullable=False)
+    system_id: Mapped[int] = mapped_column(ForeignKey("ai_systems.id"), nullable=False, index=True)
     rule_id: Mapped[str] = mapped_column(String, nullable=False)
     severity: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(
@@ -189,7 +191,7 @@ class FindingEvidence(Base):
 
     finding_id: Mapped[int] = mapped_column(ForeignKey("findings.id"), primary_key=True)
     evidence_id: Mapped[int] = mapped_column(
-        ForeignKey("evidence.id"), primary_key=True
+        ForeignKey("evidence.id"), primary_key=True, index=True
     )
 
 
@@ -198,6 +200,7 @@ class AuditEvent(Base):
 
     __tablename__ = "audit_events"
     __table_args__ = (
+        Index("ix_audit_events_entity_type_entity_id", "entity_type", "entity_id"),
         CheckConstraint(
             "jsonb_typeof(details) = 'object'",
             name="ck_audit_events_details_object",

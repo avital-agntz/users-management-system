@@ -2,7 +2,7 @@
 
 import unittest
 
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, inspect
 from sqlalchemy.exc import IntegrityError
 
 from app.models import AISystem, AuditEvent, Component, Evidence, Finding, FindingEvidence, User
@@ -98,6 +98,30 @@ class RegistryModelTests(unittest.TestCase):
 
     def test_component_system_foreign_key(self):
         self.assert_rejected(Component, {"system_id": 999999, "kind": "model", "name": "missing"}, "23503")
+
+    def test_component_identity_is_unique_within_system(self):
+        values = {"system_id": self.system_id, "kind": "model", "name": "example-model"}
+        self.assert_rejected(Component, values, "23505", "uq_components_system_kind_name")
+        # Version does not change logical identity; evidence locations share a row.
+        self.assert_rejected(Component, {**values, "version": "2"},
+                             "23505", "uq_components_system_kind_name")
+        self.add(Component, **{**values, "kind": "tool"})
+        other = self.add(AISystem, **self.system_values(name="other", manifest_sha256="b" * 64))
+        self.add(Component, **{**values, "system_id": other})
+
+    def test_registry_lookup_indexes_exist(self):
+        inspector = inspect(self.engine)
+        expected = {
+            "components": ("ix_components_system_id", ["system_id"]),
+            "evidence": ("ix_evidence_component_id", ["component_id"]),
+            "findings": ("ix_findings_system_id", ["system_id"]),
+            "finding_evidence": ("ix_finding_evidence_evidence_id", ["evidence_id"]),
+            "audit_events": ("ix_audit_events_entity_type_entity_id", ["entity_type", "entity_id"]),
+        }
+        for table, (name, columns) in expected.items():
+            with self.subTest(table=table):
+                indexes = {item["name"]: item["column_names"] for item in inspector.get_indexes(table)}
+                self.assertEqual(indexes[name], columns)
 
     def test_evidence_line_checks(self):
         for changes, constraint in [
