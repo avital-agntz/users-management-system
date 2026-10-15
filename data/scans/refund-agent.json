@@ -1,0 +1,26 @@
+{
+  "system": {
+    "name": "refund-agent",
+    "repository_url": "https://github.com/example/payments",
+    "environment": "staging"
+  },
+  "commit_sha": "9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d",
+  "components": [
+    {
+      "kind": "framework",
+      "name": "langchain",
+      "version": "0.3.1",
+      "evidence": [
+        {"file_path": "requirements.txt", "line_start": 2, "line_end": 2, "detector": "dependency-scan"}
+      ]
+    },
+    {
+      "kind": "tool",
+      "name": "issue_refund",
+      "attributes": {"writes": true, "requires_approval": false},
+      "evidence": [
+        {"file_path": "agent/tools.py", "line_start": 15, "line_end": 31, "detector": "tool-scan"}
+      ]
+    }
+  ]
+}

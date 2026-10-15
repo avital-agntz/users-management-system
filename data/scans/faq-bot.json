@@ -1,0 +1,33 @@
+{
+  "system": {
+    "name": "faq-bot",
+    "repository_url": "https://github.com/example/help-center",
+    "environment": "dev"
+  },
+  "commit_sha": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+  "components": [
+    {
+      "kind": "vendor",
+      "name": "anthropic",
+      "version": "0.39.0",
+      "evidence": [
+        {"file_path": "pyproject.toml", "line_start": 12, "line_end": 12, "detector": "dependency-scan"}
+      ]
+    },
+    {
+      "kind": "model",
+      "name": "claude-haiku",
+      "evidence": [
+        {"file_path": "bot/config.py", "line_start": 4, "line_end": 4, "detector": "config-scan"}
+      ]
+    },
+    {
+      "kind": "data_source",
+      "name": "public_faq_pages",
+      "attributes": {"sensitive": false},
+      "evidence": [
+        {"file_path": "bot/loader.py", "line_start": 20, "line_end": 27, "detector": "config-scan"}
+      ]
+    }
+  ]
+}

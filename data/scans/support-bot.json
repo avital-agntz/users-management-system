@@ -1,0 +1,42 @@
+{
+  "system": {
+    "name": "support-bot",
+    "repository_url": "https://github.com/example/support-bot",
+    "environment": "prod"
+  },
+  "commit_sha": "4f2c9a1e7b3d5f6a8c0e2b4d6f8a1c3e5b7d9f0a",
+  "components": [
+    {
+      "kind": "vendor",
+      "name": "openai",
+      "version": "1.40.0",
+      "evidence": [
+        {"file_path": "requirements.txt", "line_start": 5, "line_end": 5, "detector": "dependency-scan"},
+        {"file_path": "app/llm.py", "line_start": 3, "line_end": 3, "detector": "import-scan"}
+      ]
+    },
+    {
+      "kind": "model",
+      "name": "gpt-4o-mini",
+      "evidence": [
+        {"file_path": "app/llm.py", "line_start": 12, "line_end": 12, "detector": "config-scan"}
+      ]
+    },
+    {
+      "kind": "data_source",
+      "name": "customers_db",
+      "attributes": {"sensitive": true},
+      "evidence": [
+        {"file_path": "app/db.py", "line_start": 10, "line_end": 14, "detector": "config-scan"}
+      ]
+    },
+    {
+      "kind": "tool",
+      "name": "refund_customer",
+      "attributes": {"writes": true, "requires_approval": false},
+      "evidence": [
+        {"file_path": "app/tools.py", "line_start": 40, "line_end": 58, "detector": "tool-scan"}
+      ]
+    }
+  ]
+}
