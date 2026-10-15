@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Response
 from fastapi.responses import JSONResponse
 from redis.exceptions import RedisError
 from sqlalchemy import select, text
@@ -9,7 +9,16 @@ from app.cache import cache_profile, get_cached_profile
 from app.database import SessionLocal
 from app.dependencies import get_current_user_id
 from app.models import User
-from app.schemas import LoginRequest, RegisterRequest, ScanReport, UpdateRequest
+from app.schemas import (
+    AIBOMResponse,
+    Environment,
+    LoginRequest,
+    RegisterRequest,
+    ScanReport,
+    SystemDetail,
+    SystemsPage,
+    UpdateRequest,
+)
 from app.security import create_access_token, hash_password, verify_password
 from app.services.scans import (
     ScanActorError,
@@ -17,6 +26,7 @@ from app.services.scans import (
     ScanOwnerError,
     record_scan,
 )
+from app.services.systems import get_system_aibom, get_system_detail, list_systems
 
 app = FastAPI()
 
@@ -236,6 +246,46 @@ def submit_scan(
     # record scan attained successfully
     response.status_code = 201 if result.created else 200
     return result.system
+
+
+@app.get("/systems", response_model=SystemsPage)
+def get_systems(
+    environment: Environment | None = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    user_id: int = Depends(get_current_user_id),
+):
+    """List all recorded systems, optionally filtered by environment, limit and offest."""
+    with SessionLocal() as session:
+        return list_systems(
+            session, environment=environment, limit=limit, offset=offset
+        )
+
+
+@app.get("/systems/{system_id}", response_model=SystemDetail)
+def get_system(
+    system_id: int = Path(gt=0),
+    user_id: int = Depends(get_current_user_id),
+):
+    """Return a system's components and evidence to any authenticated user."""
+    with SessionLocal() as session:
+        result = get_system_detail(session, system_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="System not found.")
+    return result
+
+
+@app.get("/systems/{system_id}/aibom", response_model=AIBOMResponse)
+def get_aibom(
+    system_id: int = Path(gt=0),
+    user_id: int = Depends(get_current_user_id),
+):
+    """Return a system's AI inventory grouped by component kind."""
+    with SessionLocal() as session:
+        result = get_system_aibom(session, system_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="System not found.")
+    return result
 
 
 if __name__ == "__main__":

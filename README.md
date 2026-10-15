@@ -148,17 +148,19 @@ Open [Swagger UI](http://127.0.0.1:8000/docs).
 | `PUT /update` | Bearer token | `200`, updated public details |
 | `GET /profile` | Bearer token | `200`, public profile |
 | `POST /scans` | Bearer token | `201`, new system; `200`, identical scan already recorded |
+| `GET /systems` | Bearer token | `200`, paginated system summaries; optional environment filter |
+| `GET /systems/{system_id}` | Bearer token | `200`, system with components and evidence; `404` if absent |
+| `GET /systems/{system_id}/aibom` | Bearer token | `200`, system summary and inventory grouped by kind; `404` if absent |
 | `GET /health` | None | `200` when PostgreSQL and Redis respond; otherwise `503` |
 
 **Notes:**
 
 * Names are trimmed and limited to 1–50 characters.
 * Emails are validated and unique.
-* Passwords require at least 8 characters.
+* Passwords require at least 8 characters and are excluded from public responses.
 * Updates accept selected profile fields; omitted fields remain unchanged.
+* The AIBOM response contains `system` and `components_by_kind` with all categories presents.
 * Invalid input, empty updates, explicit `null`, and unsupported update fields return `422`. Invalid authentication returns `401`; duplicate emails return `409`.
-* Passwords and hashes are excluded from public responses.
-* Health failures name only the unavailable dependencies, without connection details.
 
 ## Request Examples
 

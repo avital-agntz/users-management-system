@@ -1,22 +1,14 @@
 """
-Module for requests validations - describes and validates data sent to or returned by the API.
+Module for requests and responses validations - describes and validates data sent to or returned by the API.
 """
 
 import re
+from datetime import datetime
 from typing import Literal
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    EmailStr,
-    Field,
-    HttpUrl,
-    JsonValue,
-    TypeAdapter,
-    ValidationError,
-    field_validator,
-    model_validator,
-)
+from pydantic import (BaseModel, ConfigDict, EmailStr, Field, HttpUrl,
+                      JsonValue, TypeAdapter, ValidationError, field_validator,
+                      model_validator)
 
 SHA1_HEX = r"^[0-9a-f]{40}$"
 SHA256_HEX = r"^[0-9a-f]{64}$"
@@ -26,6 +18,9 @@ ComponentKind = Literal[
 ]
 Environment = Literal["dev", "staging", "prod"]
 _HTTP_URL = TypeAdapter(HttpUrl)
+
+
+"""User-related request and response models"""
 
 
 class RegisterRequest(BaseModel):
@@ -102,6 +97,9 @@ class UserResponse(BaseModel):
     first_name: str = Field(min_length=1, max_length=50)
     last_name: str = Field(min_length=1, max_length=50)
     email: EmailStr
+
+
+"""Scan-related request and response models"""
 
 
 class ScanInputModel(BaseModel):
@@ -222,3 +220,71 @@ class ScanReport(ScanInputModel):
                 )
             seen.add(key)
         return self
+
+
+"""System-related response models"""
+
+
+class SystemSummary(BaseModel):
+    """Public summary of a single recorded AI system."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    repository_url: str
+    environment: Environment
+    owner_user_id: int | None
+    created_at: datetime
+
+
+class SystemsPage(BaseModel):
+    """System summaries and pagination metadata."""
+
+    items: list[SystemSummary]
+    total: int = Field(ge=0)
+    limit: int = Field(ge=1, le=100)
+    offset: int = Field(ge=0)
+
+
+class EvidenceResponse(BaseModel):
+    """Stored evidence identifying the source location of a component."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    commit_sha: str
+    file_path: str
+    line_start: int
+    line_end: int
+    detector: str
+    snippet_sha256: str | None
+
+
+class ComponentResponse(BaseModel):
+    """A stored component with its supporting source locations."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    kind: ComponentKind
+    name: str
+    version: str | None
+    attributes: dict[str, JsonValue]
+    evidence: list[EvidenceResponse]
+
+
+class SystemDetail(SystemSummary):
+    """System summary extended with components and their evidence."""
+
+    components: list[ComponentResponse]
+
+
+"""AI BOM models"""
+
+
+class AIBOMResponse(BaseModel):
+    """AI inventory grouped by kind, preserving every component's evidence."""
+
+    system: SystemSummary
+    components_by_kind: dict[ComponentKind, list[ComponentResponse]]
