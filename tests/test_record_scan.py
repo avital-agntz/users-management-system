@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.models import AISystem, AuditEvent, Component, Evidence, User
 from app.schemas import ScanReport
-from app.services.scans import record_scan, ScanConflictError, ScanActorError, ScanOwnerError
+from app.services.scans import (ScanActorError, ScanConflictError,
+                                ScanOwnerError, record_scan)
 from tests.database_fixture import isolated_database
 
 

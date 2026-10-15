@@ -6,18 +6,8 @@ Each model corresponds to a database table and defines the structure of the data
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import (
-    CheckConstraint,
-    DateTime,
-    ForeignKey,
-    Integer,
-    Index,
-    String,
-    Text,
-    UniqueConstraint,
-    func,
-    text,
-)
+from sqlalchemy import (CheckConstraint, DateTime, ForeignKey, Index, Integer,
+                        String, Text, UniqueConstraint, func, text)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 

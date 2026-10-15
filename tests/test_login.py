@@ -25,8 +25,8 @@ with patch("app.core.config.get_settings", return_value=IMPORT_SETTINGS):
     from app import main, security
 
 from app.models import User
-from tests.database_fixture import isolated_database
 from app.schemas import LoginRequest
+from tests.database_fixture import isolated_database
 
 
 class LoginTests(unittest.TestCase):

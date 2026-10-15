@@ -4,7 +4,8 @@ import unittest
 from unittest.mock import patch
 
 from app.core.config import Settings
-from tests.setup_database import prepare_test_database, validate_test_database_url
+from tests.setup_database import (prepare_test_database,
+                                  validate_test_database_url)
 
 
 class DatabaseSetupTests(unittest.TestCase):

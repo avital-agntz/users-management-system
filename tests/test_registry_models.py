@@ -2,10 +2,11 @@
 
 import unittest
 
-from sqlalchemy import insert, select, inspect
+from sqlalchemy import insert, inspect, select
 from sqlalchemy.exc import IntegrityError
 
-from app.models import AISystem, AuditEvent, Component, Evidence, Finding, FindingEvidence, User
+from app.models import (AISystem, AuditEvent, Component, Evidence, Finding,
+                        FindingEvidence, User)
 from tests.database_fixture import isolated_database
 
 
