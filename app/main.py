@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.responses import JSONResponse
 from redis.exceptions import RedisError
 from sqlalchemy import select, text
@@ -9,8 +9,14 @@ from app.cache import cache_profile, get_cached_profile
 from app.database import SessionLocal
 from app.dependencies import get_current_user_id
 from app.models import User
-from app.schemas import LoginRequest, RegisterRequest, UpdateRequest
+from app.schemas import LoginRequest, RegisterRequest, ScanReport, UpdateRequest
 from app.security import create_access_token, hash_password, verify_password
+from app.services.scans import (
+    ScanActorError,
+    ScanConflictError,
+    ScanOwnerError,
+    record_scan,
+)
 
 app = FastAPI()
 
@@ -42,6 +48,9 @@ def health():
             content={"status": "unhealthy", "failed_dependencies": failed},
         )
     return {"status": "healthy"}
+
+
+"""User management endpoints: register, login, update profile, and get profile."""
 
 
 @app.post("/register", status_code=201)
@@ -196,6 +205,37 @@ def profile(user_id: int = Depends(get_current_user_id)):
         # cache the profile data in Redis for future requests
         cache_profile(profile_data)
         return profile_data
+
+
+"""AI Scan endpoints: submit scan"""
+
+
+@app.post(
+    "/scans", status_code=201, responses={200: {"description": "Scan already recorded"}}
+)
+def submit_scan(
+    report: ScanReport,
+    response: Response,
+    user_id: int = Depends(get_current_user_id),
+):
+    """Record a scan report; identical submissions return the existing system."""
+    with SessionLocal() as session:
+        try:
+            result = record_scan(session, report, actor_user_id=user_id)
+        except ScanActorError as error:
+            raise HTTPException(
+                status_code=401,
+                detail=str(error),
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from None
+        except ScanOwnerError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        except ScanConflictError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from None
+
+    # record scan attained successfully
+    response.status_code = 201 if result.created else 200
+    return result.system
 
 
 if __name__ == "__main__":

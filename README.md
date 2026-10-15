@@ -16,9 +16,11 @@ FastAPI service for user registration, JWT authentication, and profile managemen
 
 ## Data model
 
+Incoming scan reports use `ScanReport`, `ScanSystem`, `ScanComponent`, and `ScanEvidence`. Scan reports are submitted through authenticated `POST /scans`; `manifest_sha256` is the database name for the scan report fingerprint. Recording logic lives in `app/services/scans.py`.
+
 A repository can contain multiple named AI systems. Each system contains components, evidence records their source locations, and findings link to the evidence supporting a risk signal. Audit events record the actor and affected entity.
 
-Migration 2 adds the registry tables and database constraints. The diagram's mandatory evidence relationships describe the intended application invariant; minimum evidence counts, same-system evidence links, and insert-only audit behavior still require service-layer enforcement. Registry endpoints are not implemented yet.
+Migration 2 adds the registry tables and database constraints. The diagram's mandatory evidence relationships describe the intended application invariant; minimum evidence counts, same-system evidence links, and insert-only audit behavior still require service-layer enforcement. Scan submission is implemented; registry read and evaluation endpoints are still pending.
 
 ```mermaid
 erDiagram
@@ -145,6 +147,7 @@ Open [Swagger UI](http://127.0.0.1:8000/docs).
 | `POST /login` | Email and password | `200`, access token |
 | `PUT /update` | Bearer token | `200`, updated public details |
 | `GET /profile` | Bearer token | `200`, public profile |
+| `POST /scans` | Bearer token | `201`, new system; `200`, identical scan already recorded |
 | `GET /health` | None | `200` when PostgreSQL and Redis respond; otherwise `503` |
 
 **Notes:**
