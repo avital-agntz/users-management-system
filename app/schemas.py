@@ -6,9 +6,18 @@ import re
 from datetime import datetime
 from typing import Literal
 
-from pydantic import (BaseModel, ConfigDict, EmailStr, Field, HttpUrl,
-                      JsonValue, TypeAdapter, ValidationError, field_validator,
-                      model_validator)
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    HttpUrl,
+    JsonValue,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 SHA1_HEX = r"^[0-9a-f]{40}$"
 SHA256_HEX = r"^[0-9a-f]{64}$"
