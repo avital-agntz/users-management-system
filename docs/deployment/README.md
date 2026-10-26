@@ -66,3 +66,25 @@ stopped RDS database after 7 days. Only deleting the resources stops every cost.
 | Migrations separate from startup | ✅ | The container only starts the API, so a failed migration shows up on its own and cannot block a restart. |
 | App works against RDS | Pending | Verified from EC2 in 2.3, because RDS is private. |
 | No silent SQLite fallback | ✅ | With `APP_ENV=production`, the app refuses to start unless `DATABASE_URL` is PostgreSQL with `sslmode=verify-full`. |
+
+## 2.3 EC2 server (in progress)
+
+Design choices, decided before building:
+
+| Choice | Decision | Reason |
+|---|---|---|
+| Operating system | Amazon Linux 2023 | Built for EC2; SSM Agent preinstalled; used in AWS docs. |
+| Server access | Session Manager only; port 22 closed | No open door to the internet and no key files; every session is logged. |
+| Public address | Elastic IP | Stays the same through stop/start, so the domain (2.4) always points to the server. |
+| Code delivery | `git clone` and build on the server | Simple and free; the repo holds no secrets. |
+| Secrets | Server-only `.env` (`chmod 600`), filled from Secrets Manager by a script | No code changes; the server role can read only this one secret (least privilege). |
+| Redis | Docker on the same server, no published port | Cache only; losing it loses no data. |
+| Auto-restart | `restart: unless-stopped` plus Docker enabled at boot | The app returns after a crash or reboot without manual steps. |
+| Server compose file | Separate `docker-compose.ec2.yml` (`migrate`, `app`, `redis`) | No local database; the app listens only on `127.0.0.1:8000`, reachable only by Nginx. |
+
+| Checklist item | Status | How it was verified |
+|---|---|---|
+| IAM role on EC2 | ✅ | `users-management-dev-ec2-role`: Session Manager access plus read access to the one RDS password secret. |
+| Session Manager access | ✅ | Connected from the Console as `ssm-user` on Amazon Linux 2023. |
+| Only ports 80 and 443 open | ✅ | `users-management-dev-app-sg` inbound: HTTP and HTTPS only. |
+| SSH restricted | ✅ | No port 22 rule and no key pair; the Console's SSH connect fails as expected. |

@@ -1,0 +1,43 @@
+# Server (EC2) plan: the database is RDS, so there is no local db service.
+# Secrets and the RDS address come from the server-only .env file (never committed).
+#
+# Use on the server:
+#   docker compose -f docker-compose.ec2.yml run --rm migrate   # create/update tables, when needed
+#   docker compose -f docker-compose.ec2.yml up -d --build      # start or update app + redis
+
+services:
+  # One-off job, started only by hand with `run --rm migrate` (the profile keeps `up` from starting it).
+  migrate:
+    build: .
+    profiles: ["migrate"]
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+
+  app:
+    build: .
+    # Only reachable from inside the server (Nginx), never directly from the internet.
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    # Cache data is disposable; do not write snapshots or append-only files.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    # No ports: only the app container can reach Redis.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
