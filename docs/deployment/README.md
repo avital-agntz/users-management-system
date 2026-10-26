@@ -50,7 +50,7 @@ Left off on purpose: RDS Extended Support, Enhanced Monitoring, Multi-AZ, and st
 **Cost note:** stopping EC2 or RDS still charges for disks and the IP, and AWS restarts a
 stopped RDS database after 7 days. Only deleting the resources stops every cost.
 
-## 2.2 RDS and application connection (in progress)
+## 2.2 RDS and application connection ✅
 
 | Item | Status | Choice and reason |
 |---|---|---|
@@ -60,11 +60,11 @@ stopped RDS database after 7 days. Only deleting the resources stops every cost.
 | DB security group | ✅ | `users-management-dev-db-sg` allows port 5432 only from `users-management-dev-app-sg` (the EC2 server), so only the app can reach the private database, even if the server's IP changes. |
 | Credentials outside the repo | ✅ | The master password is generated and stored by AWS Secrets Manager. |
 | PostgreSQL driver | ✅ | Already present (`psycopg`); the app was migrated from SQLite earlier. |
-| RDS database URL | Pending | Set on EC2 only, never committed. |
-| Encrypted connection with certificate check | Pending | `sslmode=verify-full` with the AWS RDS CA bundle. |
+| RDS database URL | ✅ | Set only in the server's `.env`, built by `deploy/write-server-env.sh`; never committed. |
+| Encrypted connection with certificate check | ✅ | `sslmode=verify-full` with the AWS RDS CA bundle baked into the image; migrations connected successfully. |
 | Repeatable migration step | ✅ | One-off `migrate` service (`alembic upgrade head`); safe to re-run, it skips tables that already exist. |
 | Migrations separate from startup | ✅ | The container only starts the API, so a failed migration shows up on its own and cannot block a restart. |
-| App works against RDS | Pending | Verified from EC2 in 2.3, because RDS is private. |
+| App works against RDS | ✅ | From EC2: migration created the tables; `/health` healthy; register, login, and profile succeeded with a synthetic user. |
 | No silent SQLite fallback | ✅ | With `APP_ENV=production`, the app refuses to start unless `DATABASE_URL` is PostgreSQL with `sslmode=verify-full`. |
 
 ## 2.3 EC2 server (in progress)
@@ -88,3 +88,11 @@ Design choices, decided before building:
 | Session Manager access | ✅ | Connected from the Console as `ssm-user` on Amazon Linux 2023. |
 | Only ports 80 and 443 open | ✅ | `users-management-dev-app-sg` inbound: HTTP and HTTPS only. |
 | SSH restricted | ✅ | No port 22 rule and no key pair; the Console's SSH connect fails as expected. |
+| Docker, Compose, Git installed | ✅ | Installed with `dnf` plus the Compose and buildx plugins; Docker enabled at boot. |
+| Backend bound to localhost | ✅ | `docker compose ps` shows `127.0.0.1:8000->8000`; reachable only from the server. |
+| Redis private | ✅ | No published port; only the app container can reach it. |
+| RDS URL and JWT secret on the server | ✅ | Written by `deploy/write-server-env.sh`; the password comes from Secrets Manager and is never printed. |
+| Restricted secret file | ✅ | `.env` is `-rw-------` owned by root. |
+| No reload mode | ✅ | The image runs plain `uvicorn`, without `--reload`. |
+| Auto-restart | ✅ | `restart: unless-stopped` on `app` and `redis`; a reboot test follows in 2.5. |
+| Nginx installed | Pending | Done together with its configuration in 2.4. |
