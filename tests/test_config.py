@@ -52,6 +52,28 @@ class ConfigTests(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     Settings(_env_file=None, **{**self.valid, field: ""})
 
+    def test_production_rejects_insecure_database_urls(self):
+        for url in [
+            "sqlite:///./users.db",  # not PostgreSQL
+            "postgresql+psycopg://app:test@db.example.com:5432/app",  # no encryption setting
+            "postgresql+psycopg://app:test@db.example.com:5432/app?sslmode=require",  # encrypted, no certificate check
+        ]:
+            with self.subTest(url=url):
+                with self.assertRaises(ValidationError) as caught:
+                    Settings(_env_file=None, **{**self.valid, "database_url": url, "app_env": "production"})
+                # The error must not reveal the username and password from the URL.
+                self.assertNotIn("app:test", str(caught.exception))
+
+    def test_production_accepts_verified_postgresql_url(self):
+        # The only accepted shape: PostgreSQL with sslmode=verify-full.
+        url = "postgresql+psycopg://app:test@db.example.com:5432/app?sslmode=verify-full"
+        settings = Settings(_env_file=None, **{**self.valid, "database_url": url, "app_env": "production"})
+        self.assertEqual(settings.app_env, "production")
+
+    def test_development_is_the_default(self):
+        # Without APP_ENV, the app behaves as before, so local setups keep working.
+        self.assertEqual(Settings(_env_file=None, **self.valid).app_env, "development")
+
     def test_error_text_does_not_expose_input_values(self):
         # Missing DATABASE_URL must not print the supplied secret in its error.
         with self.assertRaises(ValidationError) as caught:

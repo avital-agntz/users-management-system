@@ -1,4 +1,17 @@
 services:
+  # One-off job: create or update the database tables, then exit.
+  migrate:
+    build: .
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/app
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+
   app:
     build: .
     ports:
@@ -9,6 +22,8 @@ services:
       DATABASE_URL: postgresql+psycopg://app:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/app
       REDIS_URL: redis://redis:6379/0
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       db:
