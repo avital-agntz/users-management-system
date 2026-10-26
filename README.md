@@ -110,6 +110,19 @@ In Swagger, log in, copy the token, and enter it through **Authorize** without q
 
 ## Docker Compose
 
+On the `aws-deployment` branch, use a separate local PostgreSQL volume so this
+assignment does not reuse the newer Stage 1B schema:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.aws-local.yml up -d --build
+```
+
+Use both `-f` arguments for subsequent Compose lifecycle commands on this branch.
+The override preserves the original `postgres-data` volume and uses
+`users-management-aws-deployment-postgres-data` instead. Both configurations share
+the same local service ports, so run only one branch's stack at a time.
+The test database must be created once in this volume using the test instructions below.
+
 With Docker running, port 8000 available, and the root `.env` configured, start the services:
 
 ```bash

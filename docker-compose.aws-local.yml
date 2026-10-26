@@ -1,0 +1,5 @@
+# Keep the Stage 1A deployment assignment separate from Stage 1B database data.
+# Use with: docker compose -f docker-compose.yml -f docker-compose.aws-local.yml ...
+volumes:
+  postgres-data:
+    name: users-management-aws-deployment-postgres-data

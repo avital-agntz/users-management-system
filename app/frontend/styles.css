@@ -1,0 +1,236 @@
+/* Rubik: a rounded sans-serif font from Google Fonts. */
+@import url("https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap");
+
+:root {
+  --bg: #f6f5f1;
+  --card: #ffffff;
+  --text: #16324a;
+  --muted: #4d6578;
+  --border: #dbeffb;
+  --accent: #005d93;
+  --accent-hover: #0362a4;
+  --highlight: #ffb42e;
+  --input-bg: #e8f7ff;
+  --accent-text: #ffffff;
+  --success-bg: #e6f4ea;
+  --success-text: #1e5b32;
+  --error-bg: #fdecea;
+  --error-text: #8a1c14;
+  --info-bg: #e8f7ff;
+  --info-text: #005d93;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1a24;
+    --card: #172634;
+    --text: #e4eef6;
+    --muted: #9db3c4;
+    --border: #26405a;
+    --accent: #77cbff;
+    --accent-hover: #a3dcff;
+    --accent-text: #0b1d2b;
+    --highlight: #ffb42e;
+    --input-bg: #0f1a24;
+    --success-bg: #173322;
+    --success-text: #9fdcb2;
+    --error-bg: #3a1a17;
+    --error-text: #f2aaa2;
+    --info-bg: #13324a;
+    --info-text: #a3dcff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+header,
+main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Blue banner with an amber underline. */
+header {
+  /* Line up with the cards inside main's 16px side padding. */
+  width: calc(100% - 32px);
+  max-width: 848px;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border-bottom: 4px solid var(--highlight);
+  background: linear-gradient(135deg, #005d93, #29aad7);
+  color: #ffffff;
+}
+
+header h1 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+main {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  padding-bottom: 24px;
+}
+
+/* The status message and profile span the full width. */
+#status-message,
+#profile-section {
+  grid-column: 1 / -1;
+}
+
+section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--accent);
+  border-radius: 12px;
+  padding: 18px 22px 22px;
+  box-shadow: 0 2px 8px rgba(0, 93, 147, 0.08);
+}
+
+section[hidden] {
+  display: none;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 12px;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 20px 0 8px;
+}
+
+form {
+  display: grid;
+  gap: 12px;
+}
+
+form > div {
+  display: grid;
+  gap: 4px;
+}
+
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+#password-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button {
+  font: inherit;
+  font-weight: 500;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 999px; /* pill shape */
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+#logout-button,
+#logout-button:hover:not(:disabled) {
+  margin-top: 16px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+/* Status message: hidden while empty, colored by data-kind. */
+#status-message {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  white-space: pre-line;
+}
+
+#status-message:empty {
+  display: none;
+}
+
+#status-message[data-kind="success"] {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+#status-message[data-kind="error"] {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+#status-message[data-kind="info"] {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 0;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+#profile-section > p {
+  color: var(--muted);
+  font-size: 0.9rem;
+}

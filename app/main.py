@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from redis.exceptions import RedisError
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -196,6 +199,11 @@ def profile(user_id: int = Depends(get_current_user_id)):
         # cache the profile data in Redis for future requests
         cache_profile(profile_data)
         return profile_data
+
+
+# Match API routes first, then serve the frontend from the same origin.
+FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
 
 if __name__ == "__main__":

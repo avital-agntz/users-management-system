@@ -1,0 +1,2 @@
+# Development and test tools; not installed in the production image.
+playwright

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" type="module"></script>
+  </head>
+  <body>
+    <header>
+      <h1>User Management</h1>
+      <p>Create an account, sign in, and manage your profile.</p>
+    </header>
+
+    <main>
+      <!-- JavaScript will announce request results here. -->
+      <p id="status-message" role="status" aria-live="polite"></p>
+
+      <section id="register-section" aria-labelledby="register-heading">
+        <h2 id="register-heading">Create an account</h2>
+        <form id="register-form">
+          <div>
+            <label for="register-first-name">First name</label>
+            <input id="register-first-name" name="first_name" type="text"
+                   autocomplete="given-name" maxlength="50" required>
+          </div>
+          <div>
+            <label for="register-last-name">Last name</label>
+            <input id="register-last-name" name="last_name" type="text"
+                   autocomplete="family-name" maxlength="50" required>
+          </div>
+          <div>
+            <label for="register-email">Email</label>
+            <input id="register-email" name="email" type="email"
+                   autocomplete="email" required>
+          </div>
+          <div>
+            <label for="register-password">Password</label>
+            <input id="register-password" name="password" type="password"
+                   autocomplete="new-password" minlength="8"
+                   aria-describedby="password-hint" required>
+            <p id="password-hint">Use at least 8 characters.</p>
+          </div>
+          <!-- Enabled when the API handlers are implemented. -->
+          <button type="submit" disabled>Create account</button>
+        </form>
+      </section>
+
+      <section id="login-section" aria-labelledby="login-heading">
+        <h2 id="login-heading">Log in</h2>
+        <form id="login-form">
+          <div>
+            <label for="login-email">Email</label>
+            <input id="login-email" name="email" type="email"
+                   autocomplete="username" required>
+          </div>
+          <div>
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password"
+                   autocomplete="current-password" required>
+          </div>
+          <button type="submit" disabled>Log in</button>
+        </form>
+      </section>
+
+      <!-- Show this section after a successful login. -->
+      <section id="profile-section" aria-labelledby="profile-heading" hidden>
+        <h2 id="profile-heading">Your profile</h2>
+        <dl>
+          <dt>First name</dt>
+          <dd id="profile-first-name"></dd>
+          <dt>Last name</dt>
+          <dd id="profile-last-name"></dd>
+          <dt>Email</dt>
+          <dd id="profile-email"></dd>
+        </dl>
+
+        <h3>Edit profile</h3>
+        <form id="profile-form">
+          <div>
+            <label for="edit-first-name">First name</label>
+            <input id="edit-first-name" name="first_name" type="text"
+                   autocomplete="given-name" maxlength="50" required>
+          </div>
+          <div>
+            <label for="edit-last-name">Last name</label>
+            <input id="edit-last-name" name="last_name" type="text"
+                   autocomplete="family-name" maxlength="50" required>
+          </div>
+          <div>
+            <label for="edit-email">Email</label>
+            <input id="edit-email" name="email" type="email"
+                   autocomplete="email" required>
+          </div>
+          <button type="submit" disabled>Save changes</button>
+        </form>
+        <button id="logout-button" type="button" disabled>Log out</button>
+        <p>Refreshing this page will require you to log in again.</p>
+      </section>
+
+      <noscript>Please enable JavaScript to use this application.</noscript>
+    </main>
+  </body>
+</html>
